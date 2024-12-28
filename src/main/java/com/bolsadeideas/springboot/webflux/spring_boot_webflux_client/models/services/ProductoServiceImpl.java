@@ -2,7 +2,10 @@ package com.bolsadeideas.springboot.webflux.spring_boot_webflux_client.models.se
 
 import com.bolsadeideas.springboot.webflux.spring_boot_webflux_client.models.Producto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -64,5 +67,20 @@ public class ProductoServiceImpl implements ProductoService {
             .uri("/{id}", Collections.singletonMap("id", id))
             .exchange()
             .then();
+    }
+    
+    @Override
+    public Mono<Producto> upload(FilePart file, String id) {
+        MultipartBodyBuilder parts = new MultipartBodyBuilder();
+        parts.asyncPart("file", file.content(), DataBuffer.class).headers(h -> {
+                h.setContentDispositionFormData("file", file.filename());
+            });
+        
+        return client.post()
+            .uri("/upload/{id}", Collections.singletonMap("id", id))
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .syncBody(parts.build())
+            .retrieve()
+            .bodyToMono(Producto.class);
     }
 }
